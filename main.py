@@ -1,11 +1,11 @@
 # Список товаров для будщего парсера 
 tracked_items = ["ноутбук", "смартфон", "наушники"]
 # Добавляем новый товар в список
-track_items.append ("монитор")
+tracked_items.append ("монитор")
 print(f"Список товаров для отслеживания: {tracked_items}")
-print(f"Всего товаров в работе: {len(tracked items)}")
+print(f"Всего товаров в работе: {len(tracked_items)}")
 # Проверяем наличие конкретного товара с помощью условий
-search target = "смартфон"
+search_target = "смартфон"
 if search_target in tracked_items:
     print(f"Товар '{search_target}' найден в базе запускаем сбор цен")
 else:
