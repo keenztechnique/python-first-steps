@@ -2,27 +2,46 @@ from bs4 import BeautifulSoup
 import json
 import requests
 
-def scrape_quotes(url):
-  """Функция для парсинга цитат с веб-страницы"""
-  try:
-    response = requests.get(url)
-    if response.status_code == 200:
+def scrape_multiple_pages(base_url, max_pages=3):
+  """Функция для сбора цитат с нескольких страниц (пагинация)"""
+  all_quotes = []
+  current_url = base_url
+  page_count = 1
+
+  while current_url and page_count <= max_pages:
+    print(f"Парсим страницу {page_count}: {current_url}")
+
+    try:
+      response = requests.get(current_url)
+      if response.status_code != 200:
+        print(f"Ошибка загрузки: код {response.status_code}")
+        break
+
       soup = BeautifulSoup(response.text, "html.parser")
       quote_blocks = soup.find_all("div", class_="quote")
 
-      quotes_list = []
+      # Собираем цитаты с текущей страницы
       for block in quote_blocks:
         text = block.find("span", class_="text").text
         author = block.find("small", class_="author").text
-        quotes_list.append({"author": author, "text": text})
+        all_quotes.append({"author": author, "text": text})
 
-      return quotes_list
-    else:
-      print(f"Ошибка сервера: код {response.status_code}")
-      return []
-  except Exception as e:
-    print(f"Произошла ошибка при парсинге: {e}")
-    return []
+      # Ищем ссылку на следующую страницу
+      next_btn = soup.find("li", class_="next")
+      if next_btn:
+        next_page_relative = next_btn.find("a")["href"]
+        # Базовый URL сайта + относительная ссылка на следующую страницу
+        current_url = base_url.rstrip("/") + next_page_relative
+        page_count += 1
+      else:
+        print("Больше нет страниц для парсинга.")
+        current_url = None
+
+    except Exception as e:
+      print(f"Произошла ошибка: {e}")
+      break
+
+  return all_quotes
 
 def save_to_json(filename, data):
   """Функция для сохранения данных в JSON-файл"""
@@ -32,16 +51,15 @@ def save_to_json(filename, data):
 
 # Главная точка входа в программу
 if __name__ == "__main__":
-  url = "https://quotes.toscrape.com/"
+  base_url = "https://quotes.toscrape.com"
 
-  print("--- Запуск сбора данных с сайта ---")
+  print("--- Запуск многостраничного сбора данных ---")
 
-  # Шаг 1. Спарсим цитаты
-  scraped_data = scrape_quotes(url)
+  # Соберем данные с первых 3 страниц (для примера)
+  scraped_data = scrape_multiple_pages(base_url, max_pages=3)
 
-  # Шаг 2. Сохраним результат, если данные получены
   if scraped_data:
-    print(f"Успешно собрано цитат: {len(scraped_data)}")
-    save_to_json("scraped_quotes.json", scraped_data)
+    print(f"\nВсего успешно собрано цитат со всех страниц: {len(scraped_data)}")
+    save_to_json("multi_page_quotes.json", scraped_data)
 
   print("--- Работа программы завершена ---")
