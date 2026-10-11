@@ -80,7 +80,6 @@ def save_to_sqlite(db_name, data):
   conn = sqlite3.connect(db_name)
   cursor = conn.cursor()
 
-  # Создаем таблицу для цитат, если она еще не существует
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS quotes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,7 +88,6 @@ def save_to_sqlite(db_name, data):
         )
     """)
 
-  # Записываем каждую цитату в таблицу
   for item in data:
     cursor.execute(
         "INSERT INTO quotes (author, text) VALUES (?, ?)",
@@ -105,6 +103,23 @@ def save_to_sqlite(db_name, data):
   logging.info(success_msg)
   print(success_msg)
 
+def get_quotes_from_sqlite(db_name, author_filter=None):
+  """Чтение данных из базы данных SQLite с возможностью фильтрации по автору"""
+  conn = sqlite3.connect(db_name)
+  cursor = conn.cursor()
+
+  if author_filter:
+    cursor.execute(
+        "SELECT author, text FROM quotes WHERE author LIKE ?",
+        (f"%{author_filter}%",),
+    )
+  else:
+    cursor.execute("SELECT author, text FROM quotes")
+
+  rows = cursor.fetchall()
+  conn.close()
+  return rows
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
       description="Профессиональный скрейпер с SQLite"
@@ -114,19 +129,35 @@ if __name__ == "__main__":
   parser.add_argument(
       "--db", type=str, default="quotes.db", help="SQLite database filename"
   )
+  parser.add_argument(
+      "--search", type=str, default="", help="Search quotes by author in DB"
+  )
+  parser.add_argument(
+      "--view-db", action="store_true", help="View all quotes from DB"
+  )
   args = parser.parse_args()
 
   base_url = "https://quotes.toscrape.com"
 
-  logging.info("--- Запуск утилиты сбора данных ---")
-  print("--- Запуск утилиты сбора данных ---")
+  if args.view_db or args.search:
+    print(f"\n--- Чтение из базы данных ({args.db}) ---")
+    results = get_quotes_from_sqlite(args.db, author_filter=args.search)
+    if results:
+      print(f"Найдено записей: {len(results)}\n")
+      for idx, (author, text) in enumerate(results, 1):
+        print(f"{idx}. {author}:\n   {text}\n")
+    else:
+      print("По вашему запросу ничего не найдено в базе данных.")
+  else:
+    logging.info("--- Запуск утилиты сбора данных ---")
+    print("--- Запуск утилиты сбора данных ---")
 
-  scraped_data = scrape_multiple_pages(base_url, max_pages=args.pages)
+    scraped_data = scrape_multiple_pages(base_url, max_pages=args.pages)
 
-  if scraped_data:
-    print(f"\nВсего успешно собрано цитат: {len(scraped_data)}")
-    save_to_csv(args.output, scraped_data)
-    save_to_sqlite(args.db, scraped_data)
+    if scraped_data:
+      print(f"\nВсего успешно собрано цитат: {len(scraped_data)}")
+      save_to_csv(args.output, scraped_data)
+      save_to_sqlite(args.db, scraped_data)
 
-  logging.info("--- Работа программы завершена ---")
-  print("--- Работа программы завершена ---")
+    logging.info("--- Работа программы завершена ---")
+    print("--- Работа программы завершена ---")
