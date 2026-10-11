@@ -13,5 +13,10 @@
         "title": "Наушники",
         "current_price": 12000,
         "is_active": false
+    },
+    {
+        "title": "Планшет за 40000",
+        "current_price": 40000,
+        "is_active": true
     }
 ]
