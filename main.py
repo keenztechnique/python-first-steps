@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import json
+import csv
 import requests
 
 def scrape_multiple_pages(base_url, max_pages=3):
@@ -20,17 +20,14 @@ def scrape_multiple_pages(base_url, max_pages=3):
       soup = BeautifulSoup(response.text, "html.parser")
       quote_blocks = soup.find_all("div", class_="quote")
 
-      # Собираем цитаты с текущей страницы
       for block in quote_blocks:
         text = block.find("span", class_="text").text
         author = block.find("small", class_="author").text
         all_quotes.append({"author": author, "text": text})
 
-      # Ищем ссылку на следующую страницу
       next_btn = soup.find("li", class_="next")
       if next_btn:
         next_page_relative = next_btn.find("a")["href"]
-        # Базовый URL сайта + относительная ссылка на следующую страницу
         current_url = base_url.rstrip("/") + next_page_relative
         page_count += 1
       else:
@@ -43,23 +40,31 @@ def scrape_multiple_pages(base_url, max_pages=3):
 
   return all_quotes
 
-def save_to_json(filename, data):
-  """Функция для сохранения данных в JSON-файл"""
-  with open(filename, "w", encoding="utf-8") as file:
-    json.dump(data, file, ensure_ascii=False, indent=4)
-    print(f"Отчет успешно сохранен в файл {filename}!")
+def save_to_csv(filename, data):
+  """Функция для сохранения собранных данных в CSV-таблицу"""
+  # Используем utf-8-sig, чтобы кириллица идеально открывалась в Excel
+  with open(filename, "w", newline="", encoding="utf-8-sig") as file:
+    # Указываем названия колонок таблицы
+    fieldnames = ["author", "text"]
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+    writer.writeheader()  # Записываем шапку таблицы
+    writer.writerows(data)  # Записываем все строки с данными
+
+  print(f"Табличный отчет успешно сохранен в файл {filename}!")
 
 # Главная точка входа в программу
 if __name__ == "__main__":
   base_url = "https://quotes.toscrape.com"
 
-  print("--- Запуск многостраничного сбора данных ---")
+  print("--- Запуск сбора данных и экспорта в таблицу ---")
 
-  # Соберем данные с первых 3 страниц (для примера)
+  # Шаг 1. Собираем данные с 3 страниц
   scraped_data = scrape_multiple_pages(base_url, max_pages=3)
 
+  # Шаг 2. Сохраняем в CSV, если данные есть
   if scraped_data:
-    print(f"\nВсего успешно собрано цитат со всех страниц: {len(scraped_data)}")
-    save_to_json("multi_page_quotes.json", scraped_data)
+    print(f"\nВсего успешно собрано цитат: {len(scraped_data)}")
+    save_to_csv("quotes_table.csv", scraped_data)
 
   print("--- Работа программы завершена ---")
