@@ -2,9 +2,10 @@ from bs4 import BeautifulSoup
 import argparse
 import csv
 import logging
+import os
 import requests
 
-# Настраиваем логирование: все статусы и ошибки будут записываться в файл scraper.log
+# Настраиваем логирование
 logging.basicConfig(
     filename="scraper.log",
     level=logging.INFO,
@@ -18,7 +19,6 @@ def scrape_multiple_pages(base_url, max_pages):
   current_url = base_url
   page_count = 1
 
-  # Заголовки маскируют наш скрипт под обычный браузер Chrome
   headers = {
       "User-Agent": (
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
@@ -32,7 +32,6 @@ def scrape_multiple_pages(base_url, max_pages):
     print(msg)
 
     try:
-      # Передаем headers в запрос, чтобы защититься от банов
       response = requests.get(current_url, headers=headers)
       if response.status_code != 200:
         error_msg = f"Ошибка загрузки: код {response.status_code}"
@@ -65,7 +64,7 @@ def scrape_multiple_pages(base_url, max_pages):
   return all_quotes
 
 def save_to_csv(filename, data):
-  """Сохранение данных в CSV с записью события в лог"""
+  """Сохранение данных в CSV"""
   with open(filename, "w", newline="", encoding="utf-8-sig") as file:
     fieldnames = ["author", "text"]
     writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -76,12 +75,30 @@ def save_to_csv(filename, data):
   logging.info(success_msg)
   print(success_msg)
 
+def send_telegram_message(token, chat_id, message):
+  """Функция отправки текстового сообщения в Telegram"""
+  url = f"https://api.telegram.org/bot{token}/sendMessage"
+  payload = {"chat_id": chat_id, "text": message}
+  try:
+    response = requests.post(url, data=payload)
+    if response.status_code == 200:
+      print("Уведомление успешно отправлено в Telegram!")
+    else:
+      print(f"Ошибка отправки в Telegram: {response.text}")
+  except Exception as e:
+    print(f"Ошибка соединения с Telegram API: {e}")
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
-      description="Профессиональный скрейпер с Headers и Logging"
+      description="Профессиональный скрейпер с Telegram"
   )
   parser.add_argument("--pages", type=int, default=2)
-  parser.add_argument("--output", type=str, default="quotes_pro.csv")
+  parser.add_argument("--output", type=str, default="quotes_tg.csv")
+  # Добавим аргументы для бота (можно передавать из терминала или прописать по умолчанию)
+  parser.add_argument(
+      "--token", type=str, default="", help="Telegram Bot Token"
+  )
+  parser.add_argument("--chat_id", type=str, default="", help="Telegram Chat ID")
   args = parser.parse_args()
 
   base_url = "https://quotes.toscrape.com"
@@ -94,6 +111,18 @@ if __name__ == "__main__":
   if scraped_data:
     print(f"\nВсего успешно собрано цитат: {len(scraped_data)}")
     save_to_csv(args.output, scraped_data)
+
+    # Если токен и чат указаны, отправляем отчет в Telegram
+    if args.token and args.chat_id:
+      report_text = (
+          f"✅ Скрейпер завершил работу!\nСобрано цитат: {len(scraped_data)}"
+          f"\nФайл: {args.output}"
+      )
+      send_telegram_message(args.token, args.chat_id, report_text)
+    else:
+      print(
+          "Токен или Chat ID не указаны, отправка в Telegram пропущена."
+      )
 
   logging.info("--- Работа программы завершена ---")
   print("--- Работа программы завершена ---")
