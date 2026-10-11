@@ -1,0 +1,107 @@
+[
+    {
+        "title": "Essence Mascara Lash Princess",
+        "price": 9.99,
+        "rating": 2.56
+    },
+    {
+        "title": "Eyeshadow Palette with Mirror",
+        "price": 19.99,
+        "rating": 2.86
+    },
+    {
+        "title": "Powder Canister",
+        "price": 14.99,
+        "rating": 4.64
+    },
+    {
+        "title": "Red Lipstick",
+        "price": 12.99,
+        "rating": 4.36
+    },
+    {
+        "title": "Red Nail Polish",
+        "price": 8.99,
+        "rating": 4.32
+    },
+    {
+        "title": "Calvin Klein CK One",
+        "price": 49.99,
+        "rating": 4.37
+    },
+    {
+        "title": "Apple",
+        "price": 1.99,
+        "rating": 4.19
+    },
+    {
+        "title": "Beef Steak",
+        "price": 12.99,
+        "rating": 4.47
+    },
+    {
+        "title": "Cat Food",
+        "price": 8.99,
+        "rating": 3.13
+    },
+    {
+        "title": "Chicken Meat",
+        "price": 9.99,
+        "rating": 3.19
+    },
+    {
+        "title": "Cooking Oil",
+        "price": 4.99,
+        "rating": 4.8
+    },
+    {
+        "title": "Cucumber",
+        "price": 1.49,
+        "rating": 4.07
+    },
+    {
+        "title": "Dog Food",
+        "price": 10.99,
+        "rating": 4.55
+    },
+    {
+        "title": "Eggs",
+        "price": 2.99,
+        "rating": 2.53
+    },
+    {
+        "title": "Fish Steak",
+        "price": 14.99,
+        "rating": 3.78
+    },
+    {
+        "title": "Green Bell Pepper",
+        "price": 1.29,
+        "rating": 3.25
+    },
+    {
+        "title": "Green Chili Pepper",
+        "price": 0.99,
+        "rating": 3.66
+    },
+    {
+        "title": "Honey Jar",
+        "price": 6.99,
+        "rating": 3.97
+    },
+    {
+        "title": "Ice Cream",
+        "price": 5.49,
+        "rating": 3.39
+    },
+    {
+        "title": "Juice",
+        "price": 3.99,
+        "rating": 3.94
+    },
+    {
+        "title": "Kiwi",
+        "price": 2.49,
+        "rating": 4.93
+    }
+]

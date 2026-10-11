@@ -1,36 +1,44 @@
 import json
 import requests
 
-# URL открытого тестового API с информацией о товаре
-url = "https://dummyjson.com/products/1"
+# URL открытого API, который возвращает список товаров
+url = "https://dummyjson.com/products"
 
-print("--- Отправляем запрос к серверу ---")
+print("--- Запрос списка товаров с сервера ---")
 
 try:
-    # Делаем GET-запрос к сайту/API
     response = requests.get(url)
     
-    # Проверяем, успешен ли запрос (код 200 означает успех)
     if response.status_code == 200:
-        print("Данные успешно получены с сервера!")
+        data = response.json()
+        # Получаем сам список товаров из ключа "products"
+        products = data.get("products", [])
         
-        # Превращаем ответ сервера из текста в словарь Python
-        product_data = response.json()
+        print(f"Успешно получено товаров с сервера: {len(products)}")
         
-        # Вытягиваем нужные поля
-        title = product_data.get("title")
-        price = product_data.get("price")
+        # Создаем пустой список для отфильтрованных товаров
+        cheap_products = []
         
-        print(f"Полученный товар: {title} | Цена: ${price}")
+        # Проходим по каждому товару и ищем выгодные (дешевле $50)
+        for item in products:
+            if item["price"] < 50:
+                cheap_products.append({
+                    "title": item["title"],
+                    "price": item["price"],
+                    "rating": item["rating"]
+                })
+                
+        print(f"Найдено товаров дешевле $50: {len(cheap_products)}")
         
-        # Сохраняем полученные данные в наш локальный файл отчета
-        with open("report.json", "w", encoding="utf-8") as file:
-            json.dump(product_data, file, ensure_ascii=False, indent=4)
-            print("Данные сохранены в report.json!")
+        # Сохраняем отфильтрованный результат в отдельный файл
+        with open("cheap_products.json", "w", encoding="utf-8") as file:
+            json.dump(cheap_products, file, ensure_ascii=False, indent=4)
+            print("Отчет успешно сохранен в cheap_products.json!")
+            
     else:
         print(f"Ошибка сервера: код ответа {response.status_code}")
 
 except Exception as e:
-    print(f"Произошла ошибка при запросе: {e}")
+    print(f"Произошла ошибка: {e}")
 
-print("--- Запрос завершен ---")
+print("--- Обработка завершена ---")
