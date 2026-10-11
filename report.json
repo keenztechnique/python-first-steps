@@ -1,0 +1,17 @@
+[
+    {
+        "title": "Ноутбук",
+        "current_price": 75000,
+        "is_active": true
+    },
+    {
+        "title": "Смартфон",
+        "current_price": 55000,
+        "is_active": true
+    },
+    {
+        "title": "Наушники",
+        "current_price": 12000,
+        "is_active": false
+    }
+]
