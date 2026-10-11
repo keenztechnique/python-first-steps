@@ -1,36 +1,47 @@
 from bs4 import BeautifulSoup
+import json
 import requests
 
-# В качестве примера возьмем открытый тестовый сайт для парсинга
-url = "https://quotes.toscrape.com/"
-
-print("--- Запрос веб-страницы ---")
-
-try:
+def scrape_quotes(url):
+  """Функция для парсинга цитат с веб-страницы"""
+  try:
     response = requests.get(url)
-    
     if response.status_code == 200:
-        print("Страница успешно получена!")
-        
-        # Передаем HTML-код страницы в BeautifulSoup для анализа
-        soup = BeautifulSoup(response.text, "html.parser")
-        
-        # Находим все блоки с цитатами на странице
-        quote_blocks = soup.find_all("div", class_="quote")
-        
-        print(f"Найдено цитат на странице: {len(quote_blocks)}\n")
-        
-        # Проходим по каждой цитате и вытягиваем текст и автора
-        for block in quote_blocks:
-            text = block.find("span", class_="text").text
-            author = block.find("small", class_="author").text
-            
-            print(f"• {author}: {text}")
-            
+      soup = BeautifulSoup(response.text, "html.parser")
+      quote_blocks = soup.find_all("div", class_="quote")
+
+      quotes_list = []
+      for block in quote_blocks:
+        text = block.find("span", class_="text").text
+        author = block.find("small", class_="author").text
+        quotes_list.append({"author": author, "text": text})
+
+      return quotes_list
     else:
-        print(f"Ошибка загрузки страницы: код {response.status_code}")
+      print(f"Ошибка сервера: код {response.status_code}")
+      return []
+  except Exception as e:
+    print(f"Произошла ошибка при парсинге: {e}")
+    return []
 
-except Exception as e:
-    print(f"Произошла ошибка: {e}")
+def save_to_json(filename, data):
+  """Функция для сохранения данных в JSON-файл"""
+  with open(filename, "w", encoding="utf-8") as file:
+    json.dump(data, file, ensure_ascii=False, indent=4)
+    print(f"Отчет успешно сохранен в файл {filename}!")
 
-print("\n--- Парсинг завершен ---")
+# Главная точка входа в программу
+if __name__ == "__main__":
+  url = "https://quotes.toscrape.com/"
+
+  print("--- Запуск сбора данных с сайта ---")
+
+  # Шаг 1. Спарсим цитаты
+  scraped_data = scrape_quotes(url)
+
+  # Шаг 2. Сохраним результат, если данные получены
+  if scraped_data:
+    print(f"Успешно собрано цитат: {len(scraped_data)}")
+    save_to_json("scraped_quotes.json", scraped_data)
+
+  print("--- Работа программы завершена ---")
