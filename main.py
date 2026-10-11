@@ -1,15 +1,12 @@
 import json
-def create_product_card(name, price, status):
-    return {
-        "title": name,
-        "current_price": price,
-        "is_active": status
-    }
-catalog = [
-    create_product_card("Ноутбук", 75000, True),
-    create_product_card("Смартфон", 55000, True),
-    create_product_card("Наушники", 12000, False)
-]
-with open("report.json", "w", encoding="utf-8") as file:
-    json.dump(catalog, file, ensure_ascii=False, indent=4)
-print("--- Данные успешно сохранены в файл report.json ---")
+filename = "report.json"
+print("--- Попытка чтения отчета из файла ---")
+try:
+    with open(filename, "r", encoding="utf-8") as file:
+        data = json.load(file)
+        print(f"Файл успешно прочитан! Найдено записей: {len(data)}")
+        for item in data:
+            print(f"- {item['title']}: {item['current_price']} руб.")
+except FileNotFoundError:
+    print(f"Внимание: файл {filename} не найден. Сначала запустите генерацию отчета!")
+print("--- Процесс завершен ---")
