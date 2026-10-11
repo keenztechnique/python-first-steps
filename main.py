@@ -4,6 +4,7 @@ import csv
 import logging
 import sqlite3
 import requests
+from playwright.sync_api import sync_playwright
 
 # Настраиваем логирование
 logging.basicConfig(
@@ -14,7 +15,7 @@ logging.basicConfig(
 )
 
 def scrape_multiple_pages(base_url, max_pages):
-  """Функция для сбора цитат с User-Agent и логированием"""
+  """Функция для статического сбора цитат через requests и BeautifulSoup"""
   all_quotes = []
   current_url = base_url
   page_count = 1
@@ -27,7 +28,7 @@ def scrape_multiple_pages(base_url, max_pages):
   }
 
   while current_url and page_count <= max_pages:
-    msg = f"Парсим страницу {page_count} из {max_pages}: {current_url}"
+    msg = f"Парсим статическую страницу {page_count} из {max_pages}: {current_url}"
     logging.info(msg)
     print(msg)
 
@@ -60,6 +61,44 @@ def scrape_multiple_pages(base_url, max_pages):
       logging.exception(error_msg)
       print(error_msg)
       break
+
+  return all_quotes
+
+def scrape_dynamic_page_playwright(url):
+  """Функция для динамического сбора цитат через Playwright (JavaScript)"""
+  all_quotes = []
+  msg = f"Запуск браузера Playwright для динамического парсинга: {url}"
+  logging.info(msg)
+  print(msg)
+
+  try:
+    with sync_playwright() as p:
+      # Запускаем браузер в фоновом режиме (headless=True для серверной работы)
+      browser = p.chromium.launch(headless=True)
+      page = browser.new_page()
+
+      page.goto(url)
+      # Ждем появления элементов с классом .quote
+      page.wait_for_selector(".quote")
+
+      quote_elements = page.locator(".quote").all()
+
+      for element in quote_elements:
+        text = element.locator(".text").inner_text()
+        author = element.locator(".author").inner_text()
+        all_quotes.append({"author": author, "text": text})
+
+      browser.close()
+      success_msg = (
+          f"Успешно собрано динамических цитат: {len(all_quotes)}"
+      )
+      logging.info(success_msg)
+      print(success_msg)
+
+  except Exception as e:
+    error_msg = f"Ошибка Playwright: {e}"
+    logging.exception(error_msg)
+    print(error_msg)
 
   return all_quotes
 
@@ -122,7 +161,7 @@ def get_quotes_from_sqlite(db_name, author_filter=None):
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
-      description="Профессиональный скрейпер с SQLite"
+      description="Профессиональный скрейпер (Requests + Playwright + SQLite)"
   )
   parser.add_argument("--pages", type=int, default=2)
   parser.add_argument("--output", type=str, default="quotes_db.csv")
@@ -135,10 +174,16 @@ if __name__ == "__main__":
   parser.add_argument(
       "--view-db", action="store_true", help="View all quotes from DB"
   )
+  # Новый флаг для динамического парсинга через Playwright
+  parser.add_argument(
+      "--dynamic",
+      action="store_true",
+      help="Use Playwright for dynamic JS-rendered page scraping",
+  )
+
   args = parser.parse_args()
 
-  base_url = "https://quotes.toscrape.com"
-
+  # Проверяем сценарии работы
   if args.view_db or args.search:
     print(f"\n--- Чтение из базы данных ({args.db}) ---")
     results = get_quotes_from_sqlite(args.db, author_filter=args.search)
@@ -148,10 +193,28 @@ if __name__ == "__main__":
         print(f"{idx}. {author}:\n   {text}\n")
     else:
       print("По вашему запросу ничего не найдено в базе данных.")
-  else:
-    logging.info("--- Запуск утилиты сбора данных ---")
-    print("--- Запуск утилиты сбора данных ---")
 
+  elif args.dynamic:
+    # Динамический скрейпинг через Playwright
+    logging.info("--- Запуск динамического скрейпера (Playwright) ---")
+    print("--- Запуск динамического скрейпера (Playwright) ---")
+
+    dynamic_url = "https://quotes.toscrape.com/js/"
+    scraped_data = scrape_dynamic_page_playwright(dynamic_url)
+
+    if scraped_data:
+      save_to_csv(args.output, scraped_data)
+      save_to_sqlite(args.db, scraped_data)
+
+    logging.info("--- Работа программы завершена ---")
+    print("--- Работа программы завершена ---")
+
+  else:
+    # Классический статический скрейпинг через requests
+    logging.info("--- Запуск статического скрейпера (Requests) ---")
+    print("--- Запуск статического скрейпера (Requests) ---")
+
+    base_url = "https://quotes.toscrape.com"
     scraped_data = scrape_multiple_pages(base_url, max_pages=args.pages)
 
     if scraped_data:
