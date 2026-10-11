@@ -1,54 +1,36 @@
-import json
+from bs4 import BeautifulSoup
 import requests
 
-def fetch_products(url):
-    """Функция для запроса данных с сервера"""
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json().get("products", [])
-        else:
-            print(f"Ошибка сервера: код ответа {response.status_code}")
-            return []
-    except Exception as e:
-        print(f"Произошла ошибка при запросе: {e}")
-        return []
+# В качестве примера возьмем открытый тестовый сайт для парсинга
+url = "https://quotes.toscrape.com/"
 
-def filter_products(products, max_price):
-    """Функция для фильтрации товаров дешевле указанной цены"""
-    filtered_list = []
-    for item in products:
-        if item["price"] < max_price:
-            filtered_list.append({
-                "title": item["title"],
-                "price": item["price"],
-                "rating": item["rating"]
-            })
-    return filtered_list
+print("--- Запрос веб-страницы ---")
 
-def save_to_json(filename, data):
-    """Функция для сохранения данных в JSON-файл"""
-    with open(filename, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-        print(f"Отчет успешно сохранен в файл {filename}!")
-
-# Главная точка входа в программу
-if __name__ == "__main__":
-    url = "https://dummyjson.com/products"
+try:
+    response = requests.get(url)
     
-    print("--- Запуск структурированного сборщика данных ---")
-    
-    # Шаг 1. Получаем данные
-    all_products = fetch_products(url)
-    
-    if all_products:
-        print(f"Успешно получено товаров с сервера: {len(all_products)}")
+    if response.status_code == 200:
+        print("Страница успешно получена!")
         
-        # Шаг 2. Фильтруем (например, ищем всё, что дешевле $50)
-        cheap_items = filter_products(all_products, 50)
-        print(f"Найдено товаров дешевле $50: {len(cheap_items)}")
+        # Передаем HTML-код страницы в BeautifulSoup для анализа
+        soup = BeautifulSoup(response.text, "html.parser")
         
-        # Шаг 3. Сохраняем результат
-        save_to_json("cheap_products.json", cheap_items)
-    
-    print("--- Работа программы завершена ---")
+        # Находим все блоки с цитатами на странице
+        quote_blocks = soup.find_all("div", class_="quote")
+        
+        print(f"Найдено цитат на странице: {len(quote_blocks)}\n")
+        
+        # Проходим по каждой цитате и вытягиваем текст и автора
+        for block in quote_blocks:
+            text = block.find("span", class_="text").text
+            author = block.find("small", class_="author").text
+            
+            print(f"• {author}: {text}")
+            
+    else:
+        print(f"Ошибка загрузки страницы: код {response.status_code}")
+
+except Exception as e:
+    print(f"Произошла ошибка: {e}")
+
+print("\n--- Парсинг завершен ---")
