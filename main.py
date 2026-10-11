@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import argparse
 import csv
 import logging
-import os
+import sqlite3
 import requests
 
 # Настраиваем логирование
@@ -75,30 +75,45 @@ def save_to_csv(filename, data):
   logging.info(success_msg)
   print(success_msg)
 
-def send_telegram_message(token, chat_id, message):
-  """Функция отправки текстового сообщения в Telegram"""
-  url = f"https://api.telegram.org/bot{token}/sendMessage"
-  payload = {"chat_id": chat_id, "text": message}
-  try:
-    response = requests.post(url, data=payload)
-    if response.status_code == 200:
-      print("Уведомление успешно отправлено в Telegram!")
-    else:
-      print(f"Ошибка отправки в Telegram: {response.text}")
-  except Exception as e:
-    print(f"Ошибка соединения с Telegram API: {e}")
+def save_to_sqlite(db_name, data):
+  """Сохранение собранных данных в базу данных SQLite"""
+  conn = sqlite3.connect(db_name)
+  cursor = conn.cursor()
+
+  # Создаем таблицу для цитат, если она еще не существует
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS quotes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            author TEXT,
+            text TEXT
+        )
+    """)
+
+  # Записываем каждую цитату в таблицу
+  for item in data:
+    cursor.execute(
+        "INSERT INTO quotes (author, text) VALUES (?, ?)",
+        (item["author"], item["text"]),
+    )
+
+  conn.commit()
+  conn.close()
+
+  success_msg = (
+      f"Данные успешно сохранены в базу данных SQLite (файл: {db_name})!"
+  )
+  logging.info(success_msg)
+  print(success_msg)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
-      description="Профессиональный скрейпер с Telegram"
+      description="Профессиональный скрейпер с SQLite"
   )
   parser.add_argument("--pages", type=int, default=2)
-  parser.add_argument("--output", type=str, default="quotes_tg.csv")
-  # Добавим аргументы для бота (можно передавать из терминала или прописать по умолчанию)
+  parser.add_argument("--output", type=str, default="quotes_db.csv")
   parser.add_argument(
-      "--token", type=str, default="", help="Telegram Bot Token"
+      "--db", type=str, default="quotes.db", help="SQLite database filename"
   )
-  parser.add_argument("--chat_id", type=str, default="", help="Telegram Chat ID")
   args = parser.parse_args()
 
   base_url = "https://quotes.toscrape.com"
@@ -111,18 +126,7 @@ if __name__ == "__main__":
   if scraped_data:
     print(f"\nВсего успешно собрано цитат: {len(scraped_data)}")
     save_to_csv(args.output, scraped_data)
-
-    # Если токен и чат указаны, отправляем отчет в Telegram
-    if args.token and args.chat_id:
-      report_text = (
-          f"✅ Скрейпер завершил работу!\nСобрано цитат: {len(scraped_data)}"
-          f"\nФайл: {args.output}"
-      )
-      send_telegram_message(args.token, args.chat_id, report_text)
-    else:
-      print(
-          "Токен или Chat ID не указаны, отправка в Telegram пропущена."
-      )
+    save_to_sqlite(args.db, scraped_data)
 
   logging.info("--- Работа программы завершена ---")
   print("--- Работа программы завершена ---")
